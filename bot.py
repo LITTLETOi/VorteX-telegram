@@ -5,7 +5,7 @@ import json
 import datetime
 import os
 
-BOT_TOKEN = "8191885274:AAFAVYu0gYQxPZQ-sWERjn7TvEm12U1caeI"  # Seu token do bot
+BOT_TOKEN = "8191885274:AAETiQF_e_Xs198q5Ug5TDB52E_CYuUHY58"  # Seu token do bot
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # IDs autorizados e grupos permitidos
