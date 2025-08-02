@@ -5,17 +5,17 @@ import json
 import datetime
 import os
 
-BOT_TOKEN = "8191885274:AAFAVYu0gYQxPZQ-sWERjn7TvEm12U1caeI"  # Substitua pelo token do seu bot
+BOT_TOKEN = "8191885274:AAFAVYu0gYQxPZQ-sWERjn7TvEm12U1caeI"  # Seu token do bot
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# Defina seu ID de usuário do Telegram e ID(s) dos grupos permitidos aqui
-AUTHORIZED_OWNERS = [8183673253]  # Exemplo: seu user ID
-ALLOWED_GROUP_IDS = [-4781844651]  # Exemplo: ID do grupo (supergrupo)
+# IDs autorizados e grupos permitidos
+AUTHORIZED_OWNERS = [8183673253]  # ID do dono (sem o -)
+ALLOWED_GROUP_IDS = [-4781844651]  # ID do grupo (com o -)
 
 # --- Persistência de dados ---
 USER_DATA_FILE = "user_data.json"
-vip_users = {}  # {user_id: {...}}
-regular_user_usage = set()  # Usuários regulares que já usaram /like
+vip_users = {}
+regular_user_usage = set()
 
 def load_user_data():
     global vip_users, regular_user_usage
@@ -23,8 +23,7 @@ def load_user_data():
         try:
             with open(USER_DATA_FILE, 'r') as f:
                 data = json.load(f)
-                vip_users_loaded = data.get("vip_users", {})
-                vip_users.update({int(k): v for k, v in vip_users_loaded.items()})
+                vip_users.update({int(k): v for k, v in data.get("vip_users", {}).items()})
                 regular_user_usage.update(set(int(uid) for uid in data.get("regular_user_usage", [])))
                 print("User data loaded successfully.")
         except Exception as e:
@@ -65,7 +64,6 @@ def is_owner(user_id):
     return user_id in AUTHORIZED_OWNERS
 
 def is_group_allowed(chat_id, user_id):
-    # Permite se for grupo liberado OU se for dono/admin
     return chat_id in ALLOWED_GROUP_IDS or is_owner(user_id)
 
 def restricted_group(func):
@@ -140,27 +138,26 @@ def vip_add_command(msg):
 
 def check_user_like_permission(user_id):
     if is_owner(user_id):
-        return True, None  # Admin sempre pode
+        return True, None
 
     current_timestamp = time.time()
     was_vip_and_expired = False
 
     if user_id in vip_users:
         vip_data = vip_users[user_id]
-        if current_timestamp < vip_data['expiry_timestamp']:  # VIP ativo
+        if current_timestamp < vip_data['expiry_timestamp']:
             if vip_data['remaining_requests'] > 0:
                 vip_data['remaining_requests'] -= 1
                 save_user_data()
                 return True, None
             else:
                 expiry_dt_str = datetime.datetime.fromtimestamp(vip_data['expiry_timestamp']).strftime('%Y-%m-%d %H:%M UTC')
-                return False, f"❌ Você usou todas as suas requests VIP ({vip_data['total_requests_granted']}). VIP ativo até {expiry_dt_str}, mas sem requests restantes."
+                return False, f"❌ Você usou todas as requests VIP ({vip_data['total_requests_granted']}). VIP ativo até {expiry_dt_str}, mas sem requests restantes."
         else:
             was_vip_and_expired = True
             del vip_users[user_id]
             save_user_data()
 
-    # Usuário regular pode usar 1 vez só
     if user_id in regular_user_usage:
         msg = "❌ Você já usou seu like único gratuito. "
         if was_vip_and_expired:
@@ -236,16 +233,42 @@ def like_cmd(msg):
         )
 
     if data.get("status") == 200:
-        reply = (
-            f"🔹 *Nickname:* `{data.get('nickname', 'N/A')}`\n"
-            f"🔸 *Região:* `{data.get('region', 'N/A')}`\n"
-            f"🔹 *Level:* `{data.get('level', 'N/A')}`\n"
-            f"🔸 *Exp:* `{data.get('exp', 'N/A')}`\n"
-            f"🔹 *Likes antes:* `{data.get('likes_antes', 'N/A')}`\n"
-            f"🔸 *Likes depois:* `{data.get('likes_depois', 'N/A')}`\n"
-            f"🔹 *Likes enviados:* `{data.get('sent', 'N/A')}`"
+        sent_likes = data.get("sent", "0")
+        sent_count = 0
+        try:
+            sent_count = int(''.join(filter(str.isdigit, str(sent_likes))))
+        except Exception:
+            pass
+
+        if sent_count == 0:
+            bot.edit_message_text(
+                "⚠️ Você atingiu o limite diário de likes. Tente novamente amanhã!",
+                chat_id=status_msg.chat.id,
+                message_id=status_msg.message_id,
+                parse_mode="Markdown"
+            )
+            return
+
+        reply_text = (
+            "✨ **VorteX Like!** ✨\n\n"
+            f"👤 Nome: `{data.get('nickname', 'N/A')}`\n"
+            f"🆔 UID: `{uid_to_like}`\n"
+            f"🌎 Região: `{data.get('region', 'N/A')}`\n\n"
+            f"👎 Likes antes: `{data.get('likes_antes', 'N/A')}`\n"
+            f"👍 Likes depois: `{data.get('likes_depois', 'N/A')}`\n"
+            f"✅ Likes adicionados pelo Bot: `{sent_likes}`"
         )
-        bot.edit_message_text(reply, chat_id=status_msg.chat.id, message_id=status_msg.message_id, parse_mode="Markdown")
+
+        bot.edit_message_text(
+            reply_text,
+            chat_id=status_msg.chat.id,
+            message_id=status_msg.message_id,
+            parse_mode="Markdown"
+        )
+
+        image_url = "https://cdn.discordapp.com/attachments/1359752132579950685/1401313741345259591/f3fcf1b8bc493f13d38e0451ae6d2f78.gif"
+        bot.send_animation(msg.chat.id, animation=image_url)
+
     else:
         api_message = data.get("message", f"Falha ao dar like no UID {uid_to_like}. A API reportou um problema.")
         bot.edit_message_text(
