@@ -5,14 +5,12 @@ import json
 import datetime
 import os
 
-BOT_TOKEN = "8191885274:AAETiQF_e_Xs198q5Ug5TDB52E_CYuUHY58"  # Seu token do bot
+BOT_TOKEN = "8191885274:AAFdTz3pI7-uRqP4h7YPxT7cTSCjWSvuVfo"  # Seu token do bot
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# IDs autorizados e grupos permitidos
 AUTHORIZED_OWNERS = [8183673253]  # ID do dono (sem o -)
 ALLOWED_GROUP_IDS = [-4781844651]  # ID do grupo (com o -)
 
-# --- Persistência de dados ---
 USER_DATA_FILE = "user_data.json"
 vip_users = {}
 regular_user_usage = set()
@@ -47,7 +45,6 @@ def save_user_data():
         print(f"Error saving user data: {e}")
 
 load_user_data()
-# --- Fim persistência ---
 
 def safe_reply(message, text, **kwargs):
     try:
@@ -249,6 +246,9 @@ def like_cmd(msg):
             )
             return
 
+        image_url = "https://cdn.discordapp.com/attachments/1359752132579950685/1401313741345259591/f3fcf1b8bc493f13d38e0451ae6d2f78.gif"
+        bot.send_animation(msg.chat.id, animation=image_url)
+
         reply_text = (
             "✨ **VorteX Like!** ✨\n\n"
             f"👤 Nome: `{data.get('nickname', 'N/A')}`\n"
@@ -265,10 +265,6 @@ def like_cmd(msg):
             message_id=status_msg.message_id,
             parse_mode="Markdown"
         )
-
-        image_url = "https://cdn.discordapp.com/attachments/1359752132579950685/1401313741345259591/f3fcf1b8bc493f13d38e0451ae6d2f78.gif"
-        bot.send_animation(msg.chat.id, animation=image_url)
-
     else:
         api_message = data.get("message", f"Falha ao dar like no UID {uid_to_like}. A API reportou um problema.")
         bot.edit_message_text(
@@ -305,9 +301,4 @@ def get_id(msg):
 
 if __name__ == '__main__':
     print("Bot starting...")
-    while True:
-        try:
-            bot.polling(timeout=60, long_polling_timeout=45, non_stop=True)
-        except Exception as e:
-            print(f"{datetime.datetime.now()} Polling error: {e}. Retrying in 15 seconds...")
-            time.sleep(15)
+    bot.polling(timeout=60, long_polling_timeout=45, non_stop=True)
