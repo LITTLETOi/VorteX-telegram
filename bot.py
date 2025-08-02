@@ -1,11 +1,12 @@
 import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import requests
 import time
 import json
 import datetime
 import os
 
-BOT_TOKEN = "8191885274:AAG7APG1x5cydQ1Plt3MNA_Hcoy8Dx7padc"
+BOT_TOKEN = "8191885274:AAFU3M-X5FFFSW5c2OjtWRZn6dvWAxvTgCA"
 bot = telebot.TeleBot(BOT_TOKEN)
 
 AUTHORIZED_OWNERS = [8183673253]
@@ -107,9 +108,6 @@ def like_cmd(msg):
                 parse_mode="Markdown"
             )
 
-        image_url = "https://cdn.discordapp.com/attachments/1359752132579950685/1401313741345259591/f3fcf1b8bc493f13d38e0451ae6d2f78.gif"
-        bot.send_animation(msg.chat.id, animation=image_url)
-
         reply_text = (
             "✨ **VorteX Like!** ✨\n\n"
             f"👤 Nome: `{data.get('nickname', 'N/A')}`\n"
@@ -120,12 +118,18 @@ def like_cmd(msg):
             f"✅ Likes adicionados pelo Bot: `{sent_likes}`"
         )
 
+        keyboard = InlineKeyboardMarkup()
+        button = InlineKeyboardButton(text="🛒 ADQUIRA O SEU", url="https://t.me/VorteXModi")
+        keyboard.add(button)
+
         bot.edit_message_text(
             reply_text,
             chat_id=status_msg.chat.id,
             message_id=status_msg.message_id,
-            parse_mode="Markdown"
+            parse_mode="Markdown",
+            reply_markup=keyboard
         )
+
     else:
         api_message = data.get("message", "A API reportou um problema.")
         bot.edit_message_text(
