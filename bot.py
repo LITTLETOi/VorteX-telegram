@@ -3,7 +3,6 @@ import aiohttp
 import asyncio
 import time
 import threading
-import re
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 BOT_TOKEN = "7953282622:AAF4cPFrxAwG-xH-zVsxF11XLP2o5lbKYIs"
@@ -89,15 +88,18 @@ def process_like(message, uid):
         )
         return
 
-    # Dados da resposta
+    # Pegar o número enviado (corrigido)
     sent_raw = response.get('sent', '0')
-    sent_match = re.search(r'\d+', str(sent_raw))
-    sent = int(sent_match.group()) if sent_match else 0
+    sent_str = str(sent_raw).split()[0]  # Pega só o número antes do texto
+    try:
+        sent = int(sent_str)
+    except:
+        sent = 0  # Se der erro, considera 0
 
     nickname = response.get('nickname', 'N/A')
     region = response.get('region', 'N/A').upper()
 
-    # CHECAGEM DEFINITIVA: SE SENT == 0 PARA AQUI
+    # Se sent == 0, já recebeu likes hoje
     if sent == 0:
         bot.edit_message_text(
             f"• ❌ UID JÁ RECEBEU LIKES HOJE! 🚫\n\n"
