@@ -3,6 +3,7 @@ import aiohttp
 import asyncio
 import time
 import threading
+import re
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 BOT_TOKEN = "7953282622:AAF4cPFrxAwG-xH-zVsxF11XLP2o5lbKYIs"
@@ -89,11 +90,9 @@ def process_like(message, uid):
         return
 
     # Dados da resposta
-    sent_raw = response.get('sent', 0)
-    try:
-        sent = int(sent_raw)
-    except (ValueError, TypeError):
-        sent = 0  # Se não for um número válido, trata como 0
+    sent_raw = response.get('sent', '0')
+    sent_match = re.search(r'\d+', str(sent_raw))
+    sent = int(sent_match.group()) if sent_match else 0
 
     nickname = response.get('nickname', 'N/A')
     region = response.get('region', 'N/A').upper()
