@@ -130,10 +130,6 @@ def info_command(message):
         clan = data.get("clanBasicInfo", {})
         social = data.get("socialInfo", {})
 
-        profile_img_url = f"https://generatethug.onrender.com/profile?uid={uid}"
-        avatar_id = basic.get("headPic")
-        avatar_img_url = f"https://charthug.onrender.com/char?id={avatar_id}" if avatar_id else None
-
         texto = (
             f"📊 INFORMAÇÕES DO JOGADOR:\n\n"
             f"• Nome: {basic.get('nickname', 'N/A')}\n"
@@ -160,13 +156,6 @@ def info_command(message):
             f"  - Linguagem: {social.get('language', 'N/A')}\n"
             f"  - Assinatura: {social.get('signature', 'N/A')}\n"
         )
-
-        # Envia as imagens separadamente
-        bot.send_photo(message.chat.id, profile_img_url)
-        if avatar_img_url:
-            bot.send_photo(message.chat.id, avatar_img_url)
-
-        # Envia a mensagem completa de texto
         bot.send_message(message.chat.id, texto, reply_markup=developer_button())
 
     except requests.exceptions.HTTPError as http_err:
@@ -179,6 +168,7 @@ def info_command(message):
 def run_bot():
     bot.infinity_polling()
 
+from flask import Flask
 app = Flask(__name__)
 
 @app.route('/')
@@ -186,5 +176,6 @@ def home():
     return "Bot Online"
 
 if __name__ == "__main__":
+    import threading
     threading.Thread(target=run_bot).start()
     app.run(host="0.0.0.0", port=10000)
