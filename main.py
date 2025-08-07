@@ -1,13 +1,11 @@
 import telebot
 import requests
 import logging
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 from flask import Flask
 import threading
 
-# Substitua aqui pelo seu token novo
 BOT_TOKEN = '7953282622:AAGpnNH78dfht2G8KCjJKVirbWwMN7cnTIY'
-
 bot = telebot.TeleBot(BOT_TOKEN)
 
 logging.basicConfig(
@@ -20,9 +18,6 @@ API_LIKES = [
     "https://likes.ffgarena.cloud/api/v2/likes?uid={uid}&amount_of_likes=100&auth=vortex&region=ind",
     "https://likes.ffgarena.cloud/api/v2/likes?uid={uid}&amount_of_likes=100&auth=vortex&region=br"
 ]
-
-INFO_API_URL = "https://rawthug.onrender.com/info?uid={uid}"
-PROFILE_IMG_URL = "https://generatethug.onrender.com/profile?uid={uid}"
 
 def developer_button():
     markup = InlineKeyboardMarkup()
@@ -129,38 +124,58 @@ def info_command(message):
         response.raise_for_status()
         data = response.json()
         logging.info(f"Resposta API /info: {data}")
-        nickname = data.get("basicInfo", {}).get("nickname", "N/A")
-        level = data.get("basicInfo", {}).get("level", "N/A")
-        region = data.get("_resolved_region", "N/A")
-        likes = data.get("basicInfo", {}).get("liked", 0)
-        final_text = (
+
+        basic = data.get("basicInfo", {})
+        captain = data.get("captainBasicInfo", {})
+        clan = data.get("clanBasicInfo", {})
+        social = data.get("socialInfo", {})
+
+        profile_img_url = f"https://generatethug.onrender.com/profile?uid={uid}"
+        avatar_id = basic.get("headPic")
+        avatar_img_url = f"https://charthug.onrender.com/char?id={avatar_id}" if avatar_id else None
+
+        texto = (
             f"📊 INFORMAÇÕES DO JOGADOR:\n\n"
-            f"• Nome: {nickname}\n"
+            f"• Nome: {basic.get('nickname', 'N/A')}\n"
             f"• UID: {uid}\n"
-            f"• Nível: {level}\n"
-            f"• Região: {region}\n"
-            f"• Likes: {likes}"
+            f"• Nível: {basic.get('level', 'N/A')}\n"
+            f"• Região: {data.get('_resolved_region', 'N/A')}\n"
+            f"• Likes: {basic.get('liked', 0)}\n"
+            f"• Experiência: {basic.get('exp', 'N/A')}\n"
+            f"• Rank CS: {basic.get('csRank', 'N/A')}\n"
+            f"• Max Rank: {basic.get('maxRank', 'N/A')}\n"
+            f"• Temporada: {basic.get('seasonId', 'N/A')}\n\n"
+
+            f"👑 Capitão:\n"
+            f"  - Nome: {captain.get('nickname', 'N/A')}\n"
+            f"  - Nível: {captain.get('level', 'N/A')}\n"
+            f"  - Likes: {captain.get('liked', 'N/A')}\n\n"
+
+            f"🏰 Clã:\n"
+            f"  - Nome: {clan.get('clanName', 'N/A')}\n"
+            f"  - Membros: {clan.get('memberNum', 'N/A')}\n"
+            f"  - Nível: {clan.get('clanLevel', 'N/A')}\n\n"
+
+            f"💬 Social:\n"
+            f"  - Linguagem: {social.get('language', 'N/A')}\n"
+            f"  - Assinatura: {social.get('signature', 'N/A')}\n"
         )
-        bot.reply_to(message, final_text, reply_markup=developer_button())
+
+        media = [InputMediaPhoto(profile_img_url, caption=texto)]
+        if avatar_img_url:
+            media.append(InputMediaPhoto(avatar_img_url))
+
+        bot.send_media_group(message.chat.id, media, reply_markup=developer_button())
+
     except requests.exceptions.HTTPError as http_err:
         logging.error(f"HTTP error no /info: {http_err}")
-        bot.reply_to(
-            message,
-            "❌ Erro HTTP ao buscar informações.",
-            reply_markup=developer_button()
-        )
+        bot.reply_to(message, "❌ Erro HTTP ao buscar informações.", reply_markup=developer_button())
     except Exception as e:
         logging.error(f"Erro no /info: {e}")
-        bot.reply_to(
-            message,
-            "❌ Ocorreu um erro interno. Tente novamente mais tarde.",
-            reply_markup=developer_button()
-        )
+        bot.reply_to(message, "❌ Ocorreu um erro interno. Tente novamente mais tarde.", reply_markup=developer_button())
 
 def run_bot():
     bot.infinity_polling()
-
-from flask import Flask
 
 app = Flask(__name__)
 
@@ -169,6 +184,5 @@ def home():
     return "Bot Online"
 
 if __name__ == "__main__":
-    import threading
     threading.Thread(target=run_bot).start()
     app.run(host="0.0.0.0", port=10000)
