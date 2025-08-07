@@ -1,7 +1,7 @@
 import telebot
 import requests
 import logging
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from flask import Flask
 import threading
 
@@ -47,7 +47,7 @@ def like_command(message):
     except IndexError:
         bot.reply_to(
             message,
-            "⚠️ Você precisa enviar o comando assim:\n/like [ID]",
+            "⚠️ Você precisa enviar o comando assim:\n/like [UID]",
             reply_markup=developer_button()
         )
         return
@@ -161,11 +161,13 @@ def info_command(message):
             f"  - Assinatura: {social.get('signature', 'N/A')}\n"
         )
 
-        media = [InputMediaPhoto(profile_img_url, caption=texto)]
+        # Envia as imagens separadamente
+        bot.send_photo(message.chat.id, profile_img_url)
         if avatar_img_url:
-            media.append(InputMediaPhoto(avatar_img_url))
+            bot.send_photo(message.chat.id, avatar_img_url)
 
-        bot.send_media_group(message.chat.id, media, reply_markup=developer_button())
+        # Envia a mensagem completa de texto
+        bot.send_message(message.chat.id, texto, reply_markup=developer_button())
 
     except requests.exceptions.HTTPError as http_err:
         logging.error(f"HTTP error no /info: {http_err}")
